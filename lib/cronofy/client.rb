@@ -14,6 +14,13 @@ module Cronofy
       delete_event
     }.freeze
 
+    # Public: The scope to request if none is explicitly specified by the
+    # caller.
+    DEFAULT_OAUTH_ENTERPRISE_SCOPE = %w{
+      service_account/accounts/manage
+      service_account/resources/manage
+    }.freeze
+
     # Public: Initialize a new Cronofy::Client.
     #
     # options - A Hash of options used to initialize the client (default: {}):
@@ -677,6 +684,33 @@ module Cronofy
       @auth.user_auth_link(redirect_url, options)
     end
 
+    # Public: Generates a URL to send the user to in order to perform the OAuth
+    # 2.0 authorization process for an enterprise.
+    #
+    # redirect_uri - A String specifing the URI to return the user to once they
+    #                have completed the authorization steps.
+    # options      - The Hash options used to refine the selection
+    #                (default: {}):
+    #                :scope           - Array or String of scopes describing the access to
+    #                                   request from the user to the Enterprise Connect
+    #                                   account (required).
+    #                :delegated_scope - Array or String of scopes describing the access to
+    #                                   request from the Enterprise Connect to the users
+    #                                   calendars (required).
+    #                :state           - Array of states to retain during the OAuth
+    #                                   authorization process (optional).
+    #
+    # See http://www.cronofy.com/developers/api#authorization for reference.
+    #
+    # Returns the URL as a String.
+    def enterprise_connect_auth_link(redirect_url, options = {})
+      options = {
+        scope: DEFAULT_OAUTH_ENTERPRISE_SCOPE,
+        delegated_scope: DEFAULT_OAUTH_SCOPE
+      }.merge(options)
+      @auth.enterprise_connect_auth_link(redirect_url, options)
+    end
+
     # Public: Retrieves the OAuth credentials authorized for the given code and
     # redirect URL pair.
     #
@@ -1119,7 +1153,7 @@ module Cronofy
     end
 
     # Public: Gets the status of a Real-Time Scheduling link.
-    # 
+    #
     # Provide one of the following arguments to identify the link:
     # id    - A String uniquely identifying the link, returned on initial
     #         creation
@@ -1147,8 +1181,8 @@ module Cronofy
     end
 
     # Public: Disables a Real-Time Scheduling link.
-    # 
-    # id              - A String uniquely identifying the link, returned 
+    #
+    # id              - A String uniquely identifying the link, returned
     #                   on initial creation
     # display_message - A message to display to visitors of the disabled link
     #

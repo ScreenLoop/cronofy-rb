@@ -17,6 +17,7 @@ module Cronofy
       @client_credentials_missing = blank?(client_id) || blank?(client_secret)
 
       @auth_client = OAuth2::Client.new(client_id, client_secret, site: ::Cronofy.app_url(data_center), connection_opts: { headers: { "User-Agent" => "Cronofy Ruby #{::Cronofy::VERSION}" } })
+      @auth_enterprise_connect_client = OAuth2::Client.new(client_id, client_secret, site: ::Cronofy.app_url(data_center) + '/enterprise_connect', connection_opts: { headers: { "User-Agent" => "Cronofy Ruby #{::Cronofy::VERSION}" } })
       @api_client = OAuth2::Client.new(client_id, client_secret, site: ::Cronofy.api_url(data_center), connection_opts: { headers: { "User-Agent" => "Cronofy Ruby #{::Cronofy::VERSION}" } })
 
       set_access_token(access_token, refresh_token) if access_token || refresh_token
@@ -51,6 +52,44 @@ module Cronofy
       end
 
       @auth_client.auth_code.authorize_url(params)
+    end
+
+    # Internal: generate a URL for authorizing the application with Cronofy
+    #
+    # redirect_uri - A String specifing the URI to return the user to once they
+    #                have completed the authorization steps.
+    # options      - The Hash options used to refine the selection
+    #                (default: {}):
+    #                :scope           - Array or String of scopes describing the access to
+    #                                   request from the user to the Enterprise Connect
+    #                                   account (required).
+    #                :delegated_scope - Array or String of scopes describing the access to
+    #                                   request from the Enterprise Connect to the users
+    #                                   calendars (required).
+    #                :state           - Array of states to retain during the OAuth
+    #                                   authorization process (optional).
+    #
+    # See http://www.cronofy.com/developers/api#authorization for reference.
+    #
+    # Returns the URL as a String.
+    def enterprise_connect_auth_link(redirect_uri, options = {})
+      raise ArgumentError.new(":scope is required") unless options[:scope]
+      raise ArgumentError.new(":delegated_scope is required") unless options[:delegated_scope]
+
+      params = options.merge(redirect_uri: redirect_uri, response_type: 'code')
+
+      # Reformat params as needed
+      params.delete(:state) if params[:state].nil?
+
+      if params[:scope].respond_to?(:join)
+        params[:scope] = params[:scope].join(' ')
+      end
+
+      if params[:delegated_scope].respond_to?(:join)
+        params[:delegated_scope] = params[:delegated_scope].join(' ')
+      end
+
+      @auth_enterprise_connect_client.auth_code.authorize_url(params)
     end
 
     def get_token_from_code(code, redirect_uri)

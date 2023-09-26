@@ -45,7 +45,7 @@ module Cronofy
 
     def initialize(oauth_token)
       @access_token = oauth_token.token
-      @account_id = oauth_token.params['account_id']
+      @account_id = oauth_token.params['account_id'] || oauth_token.params['service_account_id']
       @application_calendar_id = oauth_token.params['application_calendar_id']
       @sub = oauth_token.params['sub']
       @expires_at = oauth_token.expires_at
